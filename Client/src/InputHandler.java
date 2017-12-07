@@ -31,6 +31,7 @@ public class InputHandler extends Thread {
                 onReceived.onReceived(line);
             } catch (IOException e) {
                 System.out.println("Could not read message");
+                return;
             }
         }
     }
