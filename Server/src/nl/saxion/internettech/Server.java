@@ -68,8 +68,12 @@ public class Server {
             users.add(owner);
         }
 
+        public ArrayList<ClientThread> getUsers() {
+            return users;
+        }
+
         public void joinGroup(ClientThread ct) {
-            for(ClientThread user: threads) {
+            for(ClientThread user: users) {
                 if(!ct.getUsername().equals(user.getUsername())) {
                     users.add(ct);
                 }
@@ -77,7 +81,7 @@ public class Server {
         }
 
         public void leaveGroup(ClientThread ct) {
-            for(ClientThread user: threads) {
+            for(ClientThread user: users) {
                 if(ct.getUsername().equals((user.getUsername()))) {
                     users.remove(ct);
                 }
@@ -85,19 +89,29 @@ public class Server {
         }
 
         public void sendMessage(String message) {
-            for(ClientThread ct: threads) {
+            for(ClientThread ct: users) {
                 ct.writeToClient(message);
             }
         }
 
         public void kickUser(String username, String ownerName) {
             if(this.ownerName.equals(ownerName)) {
-                for(ClientThread ct: threads) {
+                for(ClientThread ct: users) {
                     if(ct.getUsername().equals(username)) {
                         users.remove(ct);
                     }
                 }
             }
+        }
+
+        public String showUsers() {
+            String message = "";
+            for(ClientThread ct: users) {
+                if(ct.getUsername() != null) {
+                    message += ct.getUsername() + "\n";
+                }
+            }
+            return message;
         }
     }
 
@@ -236,6 +250,7 @@ public class Server {
                                                     msg += splits[i] + " ";
                                                 }
                                                 ct.writeToClient(msg);
+                                                writeToClient("+OK Message sent");
                                             }
                                         }
                                     }

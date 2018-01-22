@@ -7,7 +7,8 @@ public class Message {
         QUIT,
         UNKOWN,
         USERS,
-        DM
+        DM,
+        JOIN
     }
 
     private String line;
