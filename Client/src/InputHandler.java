@@ -20,20 +20,26 @@ public class InputHandler extends Thread {
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        while(true) {
-            String line = null;
-            try {
-                line = reader.readLine();
-                handler.onReceived(line);
-            } catch (IOException e) {
-                System.out.println("Lost connection, press enter to reconnect.");
-                handler.onConnectionLost();
-                return;
+            while(true) {
+                String line = null;
+                try {
+                    line = reader.readLine();
+                    if(line != null) {
+                        handler.onReceived(line);
+                    }else {
+                        handler.onConnectionLost();
+                        return;
+                    }
+
+                } catch (IOException e) {
+                    System.out.println("Lost connection, press enter to reconnect.");
+                    handler.onConnectionLost();
+                    return;
+                }
             }
+        } catch (IOException e) {
+            handler.onConnectionLost();
         }
     }
 

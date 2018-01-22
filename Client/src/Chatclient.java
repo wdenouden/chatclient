@@ -6,7 +6,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.*;
 
-public class Chatclient implements InputHandler.IMessageReceivedHandler{
+public class Chatclient implements InputHandler.IMessageReceivedHandler, ScannerThread.ScannerReadLine {
 
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 1337;
@@ -28,6 +28,10 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler{
                 InputHandler inputHandler = new InputHandler(socket);
                 inputHandler.setOnMessageReceived(this);
                 inputHandler.start();
+
+//                ScannerThread scannerThread = new ScannerThread();
+//                scannerThread.setOnMessageRead(this);
+//                scannerThread.start();
 
                 Scanner scanner = new Scanner(System.in);
                 try {
@@ -67,6 +71,8 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler{
                             break;
                     }
                 }
+
+                socket.close();
             } catch (IOException e) {
                 state = SocketState.LOGIN_INPUT;
                 System.out.println("Could not connect to server, attempting again in 500ms.");
@@ -125,5 +131,15 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler{
     @Override
     public void onConnectionLost() {
         state = SocketState.CLOSED;
+    }
+
+    @Override
+    public void lineRead(String message) {
+
+    }
+
+    @Override
+    public void exceptionOccured() {
+
     }
 }
