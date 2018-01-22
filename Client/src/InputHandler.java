@@ -28,12 +28,12 @@ public class InputHandler extends Thread {
                     if(line != null) {
                         handler.onReceived(line);
                     }else {
+                        System.out.println("Lost connection, attempting to reconnect.");
                         handler.onConnectionLost();
                         return;
                     }
-
                 } catch (IOException e) {
-                    System.out.println("Lost connection, press enter to reconnect.");
+                    System.out.println("Lost connection, attempting to reconnect.");
                     handler.onConnectionLost();
                     return;
                 }

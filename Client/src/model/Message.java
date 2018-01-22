@@ -1,34 +1,23 @@
 package model;
 
 public class Message {
-    private MessageType type;
     private String payload;
+    private int attempts;
 
-    public Message(MessageType type, String payload) {
-        this.type = type;
+    public Message(String payload) {
         this.payload = payload;
+        this.attempts = 0;
     }
 
-    public Message(MessageType type) {
-        this.type = type;
-        this.payload = "";
-    }
-
-
-    public MessageType getType() {
-        return type;
-    }
-
-    public String getPayload() {
+    public String getMessage() {
         return payload;
     }
 
-    public String getFullMessage() {
-        if(payload.isEmpty()) {
-            return type.name();
-        }else {
-            return type.name() + " " + payload;
-        }
+    public int getAttempts() {
+        return attempts;
+    }
 
+    public void increaseAttempts() {
+        attempts++;
     }
 }
