@@ -5,7 +5,9 @@ public class Message {
         HELO,
         BCST,
         QUIT,
-        UNKOWN
+        UNKOWN,
+        USERS,
+        DM
     }
 
     private String line;

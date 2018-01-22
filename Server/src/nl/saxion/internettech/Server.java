@@ -3,6 +3,7 @@ package nl.saxion.internettech;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -14,6 +15,8 @@ public class Server {
     private ServerSocket serverSocket;
     private Set<ClientThread> threads;
     private ServerConfiguration conf;
+    private GroupManager groupManager;
+
 
 
     public Server(ServerConfiguration conf) {
@@ -29,6 +32,7 @@ public class Server {
         try {
             serverSocket = new ServerSocket(conf.SERVER_PORT);
             threads = new HashSet<>();
+            groupManager = new GroupManager();
 
             while (true) {
                 // Wait for an incoming client-connection request (blocking).
@@ -48,6 +52,52 @@ public class Server {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private class Group {
+
+        private String groupName;
+        private String ownerName;
+        private ArrayList<ClientThread> users;
+
+        public Group(String groupName, ClientThread owner) {
+            this.groupName = groupName;
+            users = new ArrayList<ClientThread>();
+            ownerName = owner.getUsername();
+            users.add(owner);
+        }
+
+        public void joinGroup(ClientThread ct) {
+            for(ClientThread user: threads) {
+                if(!ct.getUsername().equals(user.getUsername())) {
+                    users.add(ct);
+                }
+            }
+        }
+
+        public void leaveGroup(ClientThread ct) {
+            for(ClientThread user: threads) {
+                if(ct.getUsername().equals((user.getUsername()))) {
+                    users.remove(ct);
+                }
+            }
+        }
+
+        public void sendMessage(String message) {
+            for(ClientThread ct: threads) {
+                ct.writeToClient(message);
+            }
+        }
+
+        public void kickUser(String username, String ownerName) {
+            if(this.ownerName.equals(ownerName)) {
+                for(ClientThread ct: threads) {
+                    if(ct.getUsername().equals(username)) {
+                        users.remove(ct);
+                    }
+                }
+            }
         }
     }
 
@@ -167,6 +217,29 @@ public class Server {
                             case UNKOWN:
                                 // Unkown command has been sent
                                 writeToClient("-ERR Unkown command");
+                                break;
+                            case USERS:
+                                for(ClientThread ct: threads) {
+                                    if(ct.getUsername() != null) {
+                                        writeToClient(ct.getUsername());
+                                    }
+                                }
+                                break;
+                            case DM :
+                                if(line != null && line.length() > 0) {
+                                    String[] splits = line.split("\\s+");
+                                    if(splits.length > 2) {
+                                        for(ClientThread ct: threads) {
+                                            if(ct.getUsername().equals(splits[1])) {
+                                                String msg = getUsername() + " says: ";
+                                                for(int i = 2; i < splits.length; i++) {
+                                                    msg += splits[i] + " ";
+                                                }
+                                                ct.writeToClient(msg);
+                                            }
+                                        }
+                                    }
+                                }
                                 break;
                         }
                     }
