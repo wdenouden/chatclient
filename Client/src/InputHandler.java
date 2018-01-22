@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class InputHandler extends Thread {
 
     private Socket socket;
-    private IMessageReceivedHandler onReceived;
+    private IMessageReceivedHandler handler;
 
     public InputHandler(Socket socket) {
         this.socket = socket;
@@ -28,19 +28,21 @@ public class InputHandler extends Thread {
             String line = null;
             try {
                 line = reader.readLine();
-                onReceived.onReceived(line);
+                handler.onReceived(line);
             } catch (IOException e) {
-                System.out.println("Could not read message");
+                System.out.println("Lost connection, press enter to reconnect.");
+                handler.onConnectionLost();
                 return;
             }
         }
     }
 
     public void setOnMessageReceived(IMessageReceivedHandler handler) {
-        this.onReceived = handler;
+        this.handler = handler;
     }
 
     public interface IMessageReceivedHandler {
         public void onReceived(String message);
+        public void onConnectionLost();
     }
 }
