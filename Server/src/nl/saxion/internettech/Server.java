@@ -130,36 +130,11 @@ public class Server {
                         switch (message.getMessageType()) {
                             case HELO:
                                 // Check username format.
-                                boolean isValidUsername = message.getPayload().matches("[a-zA-Z0-9_]{3,14}");
-                                if(!isValidUsername) {
-                                    state = FINISHED;
-                                    writeToClient("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
-                                } else {
-                                    // Check if user already exists.
-                                    boolean userExists = false;
-                                    for (ClientThread ct : threads) {
-                                        if (ct != this && message.getPayload().equals(ct.getUsername())) {
-                                            userExists = true;
-                                            break;
-                                        }
-                                    }
-                                    if (userExists) {
-                                        writeToClient("-ERR user already logged in");
-                                    } else {
-                                        state = CONNECTED;
-                                        this.username = message.getPayload();
-                                        writeToClient("+OK " + getUsername());
-                                    }
-                                }
+                                createUser(message);
                                 break;
                             case BCST:
                                 // Broadcast to other clients.
-                                for (ClientThread ct : threads) {
-                                    if (ct != this) {
-                                        ct.writeToClient("BCST [" + getUsername() + "] " + message.getPayload());
-                                    }
-                                }
-                                writeToClient("+OK");
+                                broadcast(message);
                                 break;
                             case QUIT:
                                 // Close connection
@@ -171,77 +146,36 @@ public class Server {
                                 writeToClient("-ERR Unkown command");
                                 break;
                             case USERS:
-                                for(ClientThread ct: threads) {
-                                    if(ct.getUsername() != null) {
-                                        writeToClient(ct.getUsername());
-                                    }
-                                }
+                                // Show all online users
+                                showUsers();
                                 break;
                             case DM :
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if(splits.length > 2) {
-                                        for(ClientThread ct: threads) {
-                                            if(ct.getUsername().equals(splits[1])) {
-                                                String msg = getUsername() + " says: ";
-                                                for(int i = 2; i < splits.length; i++) {
-                                                    msg += splits[i] + " ";
-                                                }
-                                                ct.writeToClient(msg);
-                                                writeToClient("+OK message sent");
-                                            }
-                                        }
-                                    }
-                                }
+                                // Send private message to user
+                                sendPrivateMessage(line);
                                 break;
                             case ADD:
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if (splits.length > 1) {
-                                        String groupName = splits[1];
-                                        Group group = new Group(groupName, this);
-                                        writeToClient(groupManager.addGroup(group));
-                                    }
-                                }
+                                // Add new group
+                                addGroup(line);
                                 break;
                             case JOIN:
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if (splits.length > 1) {
-                                        String groupName = splits[1];
-                                        writeToClient(groupManager.joinGroup(groupName, this));
-                                    }
-                                }
+                                // Join existing group
+                                joinGroup(line);
                                 break;
                             case GROUPS:
-                                writeToClient(groupManager.showGroups());
+                                // Show all groups with users
+                                showGroups();
                                 break;
                             case LEAVE:
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if (splits.length > 1) {
-                                        String groupName = splits[1];
-                                        writeToClient(groupManager.leaveGroup(groupName, this));
-                                    }
-                                }
+                                // Leave group
+                                leaveGroup(line);
                                 break;
                             case GROUPBCST:
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if(splits.length > 2) {
-                                        writeToClient(groupManager.sendGroupMessage(splits, getUsername()));
-                                    }
-                                }
+                                // Send message to all users in group
+                                groupBroadcast(line);
                                 break;
                             case KICK:
-                                if(line != null && line.length() > 0) {
-                                    String[] splits = line.split("\\s+");
-                                    if (splits.length > 2) {
-                                        String groupname = splits[1];
-                                        String username = splits[2];
-                                        writeToClient(groupManager.kickUser(groupname, username, getUsername()));
-                                    }
-                                }
+                                // Kick user from group
+                                kickUser(line);
                                 break;
                         }
                     }
@@ -251,6 +185,154 @@ public class Server {
                 socket.close();
             } catch (IOException e) {
                 System.out.println("Server Exception: " + e.getMessage());
+            }
+        }
+
+        private void createUser(Message message) {
+            boolean isValidUsername = message.getPayload().matches("[a-zA-Z0-9_]{3,14}");
+            if(!isValidUsername) {
+                state = FINISHED;
+                writeToClient("-ERR username has an invalid format (only characters, numbers and underscores are allowed)");
+            } else {
+                // Check if user already exists.
+                boolean userExists = false;
+                for (ClientThread ct : threads) {
+                    if (ct != this && message.getPayload().equals(ct.getUsername())) {
+                        userExists = true;
+                        break;
+                    }
+                }
+                if (userExists) {
+                    writeToClient("-ERR user already logged in");
+                } else {
+                    state = CONNECTED;
+                    this.username = message.getPayload();
+                    writeToClient("+OK " + getUsername());
+                }
+            }
+        }
+
+        /**
+         * Broadcast message to other users
+         * @param message
+         */
+        private void broadcast(Message message) {
+            for (ClientThread ct : threads) {
+                if (ct != this) {
+                    ct.writeToClient("BCST [" + getUsername() + "] " + message.getPayload());
+                }
+            }
+            writeToClient("+OK");
+        }
+
+        /**
+         * Show all users
+         */
+        private void showUsers() {
+            for(ClientThread ct: threads) {
+                if(ct.getUsername() != null) {
+                    writeToClient(ct.getUsername());
+                }
+            }
+        }
+
+        /**
+         * Send message to one user
+         * @param line
+         */
+        private void sendPrivateMessage(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if(splits.length > 2) {
+                    for(ClientThread ct: threads) {
+                        if(ct.getUsername().equals(splits[1])) {
+                            String msg = getUsername() + " says: ";
+                            for(int i = 2; i < splits.length; i++) {
+                                msg += splits[i] + " ";
+                            }
+                            ct.writeToClient(msg);
+                            writeToClient("+OK message sent");
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Add new group
+         * @param line
+         */
+        private void addGroup(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if (splits.length > 1) {
+                    String groupName = splits[1];
+                    Group group = new Group(groupName, this);
+                    writeToClient(groupManager.addGroup(group));
+                }
+            }
+        }
+
+        /**
+         * Join existing group
+         * @param line
+         */
+        private void joinGroup(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if (splits.length > 1) {
+                    String groupName = splits[1];
+                    writeToClient(groupManager.joinGroup(groupName, this));
+                }
+            }
+        }
+
+        /**
+         * Show all groups with their members
+         */
+        private void showGroups() {
+            writeToClient(groupManager.showGroups());
+        }
+
+        /**
+         * Leave group
+         * @param line
+         */
+        private void leaveGroup(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if (splits.length > 1) {
+                    String groupName = splits[1];
+                    writeToClient(groupManager.leaveGroup(groupName, this));
+                }
+            }
+        }
+
+        /**
+         * Send message to all users in group
+         * @param line
+         */
+        private void groupBroadcast(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if(splits.length > 2) {
+                    writeToClient(groupManager.sendGroupMessage(splits, getUsername()));
+                }
+            }
+        }
+
+        /**
+         * Kick user from group
+         * @param line
+         */
+        private void kickUser(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if (splits.length > 2) {
+                    String groupname = splits[1];
+                    String username = splits[2];
+                    writeToClient(groupManager.kickUser(groupname, username, getUsername()));
+                }
             }
         }
 
