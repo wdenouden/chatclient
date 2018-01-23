@@ -18,10 +18,6 @@ public class Group {
         return groupname;
     }
 
-    public String getOwnername() {
-        return ownername;
-    }
-
     public ArrayList<Server.ClientThread> getUsers() {
         return users;
     }
