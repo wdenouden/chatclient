@@ -8,7 +8,11 @@ public class Message {
         UNKOWN,
         USERS,
         DM,
-        JOIN
+        ADD,
+        JOIN,
+        GROUPS,
+        LEAVE,
+        GROUPBCST
     }
 
     private String line;
