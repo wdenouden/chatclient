@@ -53,208 +53,11 @@ public class Server {
         }
     }
 
-    private class Group {
-
-        private String groupName;
-        private String ownerName;
-        private ArrayList<ClientThread> users;
-
-        public Group(String groupName, ClientThread owner) {
-            this.groupName = groupName;
-            users = new ArrayList<ClientThread>();
-            ownerName = owner.getUsername();
-            users.add(owner);
-        }
-
-        public String getGroupName() {
-            return groupName;
-        }
-
-        public String getOwnerName() {
-            return ownerName;
-        }
-
-        public ArrayList<ClientThread> getUsers() {
-            return users;
-        }
-
-        public boolean joinGroup(ClientThread ct) {
-            if(!userExists(ct.getUsername())) {
-                users.add(ct);
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        public String leaveGroup(ClientThread ct) {
-            // Als owner de groep verlaat, wordt de eerst volgende persoon de owner
-            // als er geen andere gebruikers zijn, wordt de groep verwijderd
-            if(ct.getUsername().equals(ownerName)) {
-                if(users.size() > 1) {
-                    ownerName = users.get(1).getUsername();
-                } else {
-                    return "DEL";
-                }
-            }
-
-            for(ClientThread user: users) {
-                if(ct.getUsername().equals((user.getUsername()))) {
-                    users.remove(ct);
-                    return "OK";
-                }
-            }
-            return "ERR";
-        }
-
-        public void sendMessage(String message) {
-            for(ClientThread ct: users) {
-                ct.writeToClient(message);
-            }
-        }
-
-        public void kickUser(String username, String ownerName) {
-            if(this.ownerName.equals(ownerName)) {
-                for(ClientThread ct: users) {
-                    if(ct.getUsername().equals(username)) {
-                        users.remove(ct);
-                    }
-                }
-            }
-        }
-
-        public String showUsers() {
-            String message = "";
-            for(ClientThread ct: users) {
-                if(ct.getUsername() != null) {
-                    message += ct.getUsername() + "\n";
-                }
-            }
-            return message;
-        }
-
-        private boolean userExists(String username) {
-            for(ClientThread user: users) {
-                if(user.getUsername().equals(username)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private class GroupManager {
-
-        private ArrayList<Group> groups;
-
-        public GroupManager() {
-            groups = new ArrayList<>();
-        }
-
-        public String addGroup(Group group) {
-            if(!groupExists(group.getGroupName())) {
-                groups.add(group);
-                return "+OK group added";
-            } else {
-                return "-ERR group already exists";
-            }
-        }
-
-        public String joinGroup(String groupName, ClientThread ct) {
-            if(groupExists(groupName)) {
-                for(Group g: groups) {
-                    if(g.getGroupName().equals(groupName)) {
-                        if(g.joinGroup(ct)) {
-                            return "+OK group joined";
-                        } else {
-                            return "-ERR already in group";
-                        }
-                    }
-                }
-                return "-ERR group doesn't exist";
-            } else {
-                return "-ERR group doesn't exist";
-            }
-        }
-
-        public String leaveGroup(String groupName, ClientThread ct) {
-            if(groupExists(groupName)) {
-                for(Group g: groups) {
-                    if(g.getGroupName().equals(groupName)) {
-                        switch(g.leaveGroup(ct)) {
-                            case "DEL":
-                                if(deleteGroup(g)) {
-                                    return "+OK group deleted";
-                                } else {
-                                    return "-ERR ";
-                                }
-                            case "OK":
-                                return "+OK group left";
-                            case "ERR":
-                                return "-ERR user not in group";
-                        }
-                    }
-                }
-                return "-ERR group doesn't exist";
-            } else {
-                return "-ERR group doesn't exist";
-            }
-        }
-
-        public boolean deleteGroup(Group group) {
-            for(Group g: groups) {
-                if(g.getGroupName().equals(group.getGroupName())) {
-                    groups.remove(group);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public String sendGroupMessage(String[] splits, String username) {
-            String groupName = splits[1];
-            String msg = "(" + groupName + ") " + username + " says: ";
-            for(int i = 2; i < splits.length; i++) {
-                msg += splits[i] + " ";
-            }
-
-            for(Group g: groups) {
-                if(g.getGroupName().equals(groupName)) {
-                    for(ClientThread ct: g.getUsers()) {
-                        if(ct.getUsername().equals(username)) {
-                            g.sendMessage(msg);
-                            return "+OK message sent to group";
-                        }
-                    }
-                    return "-ERR not in group";
-                }
-            }
-            return "-ERR group not found";
-        }
-
-        public String showGroups() {
-            String msg = "";
-            for(Group g: groups) {
-                msg += g.getGroupName() + "\n";
-            }
-            return msg;
-        }
-
-        private boolean groupExists(String groupName) {
-            for(Group g: groups) {
-                if(g.groupName.equals(groupName)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
     /**
      * This thread sleeps for somewhere between 10 tot 20 seconds and then drops the
      * client thread. This is done to simulate a lost in connection.
      */
-    private class DropClientThread implements Runnable {
+    protected class DropClientThread implements Runnable {
         ClientThread ct;
 
         DropClientThread(ClientThread ct){
@@ -279,7 +82,7 @@ public class Server {
      * This inner class is used to handle all communication between the server and a
      * specific client.
      */
-    private class ClientThread implements Runnable {
+    protected class ClientThread implements Runnable {
 
         private DataInputStream is;
         private OutputStream os;
@@ -430,6 +233,16 @@ public class Server {
                                     }
                                 }
                                 break;
+                            case KICK:
+                                if(line != null && line.length() > 0) {
+                                    String[] splits = line.split("\\s+");
+                                    if (splits.length > 2) {
+                                        String groupname = splits[1];
+                                        String username = splits[2];
+                                        writeToClient(groupManager.kickUser(groupname, username, getUsername()));
+                                    }
+                                }
+                                break;
                         }
                     }
                 }
@@ -460,7 +273,7 @@ public class Server {
          * Write a message to this client thread.
          * @param message   The message to be sent to the (connected) client.
          */
-        private void writeToClient(String message) {
+        protected void writeToClient(String message) {
             boolean shouldDropPacket = false;
             boolean shouldCorruptPacket = false;
 

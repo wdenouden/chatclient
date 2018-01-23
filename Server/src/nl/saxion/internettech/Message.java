@@ -12,7 +12,8 @@ public class Message {
         JOIN,
         GROUPS,
         LEAVE,
-        GROUPBCST
+        GROUPBCST,
+        KICK
     }
 
     private String line;
