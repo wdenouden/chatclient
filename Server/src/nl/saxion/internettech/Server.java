@@ -1,8 +1,13 @@
 package nl.saxion.internettech;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -28,7 +33,18 @@ public class Server {
     public void run() {
         // Create a socket to wait for clients.
         try {
-            serverSocket = new ServerSocket(conf.SERVER_PORT);
+
+            SSLContext context = SSLContext.getInstance("TLS");
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+
+            keyStore.load(new FileInputStream("keystore.chatclient"), "Saxion123".toCharArray());
+            keyManagerFactory.init(keyStore, "Saxion123".toCharArray());
+            context.init(keyManagerFactory.getKeyManagers(), null, null);
+
+            SSLServerSocketFactory factory = context.getServerSocketFactory();
+
+            serverSocket = factory.createServerSocket(conf.SERVER_PORT);
             threads = new HashSet<>();
             groupManager = new GroupManager();
 
@@ -48,7 +64,7 @@ public class Server {
                     new Thread(dct).start();
                 }
             }
-        } catch (IOException e) {
+        } catch (GeneralSecurityException | IOException e ) {
             e.printStackTrace();
         }
     }
