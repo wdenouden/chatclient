@@ -142,65 +142,70 @@ public class Server {
                         // Parse incoming message.
                         Message message = new Message(line);
 
-                        // Process message.
-                        switch (message.getMessageType()) {
-                            case HELO:
-                                // Check username format.
-                                createUser(message);
-                                break;
-                            case BCST:
-                                // Broadcast to other clients.
-                                broadcast(message);
-                                break;
-                            case QUIT:
-                                // Close connection
-                                state = FINISHED;
-                                writeToClient("+OK Goodbye");
-                                break;
-                            case UNKOWN:
-                                // Unkown command has been sent
-                                writeToClient("-ERR Unkown command");
-                                break;
-                            case USERS:
-                                // Show all online users
-                                showUsers();
-                                break;
-                            case DM :
-                                // Send private message to user
-                                sendPrivateMessage(line);
-                                break;
-                            case ADD:
-                                // Add new group
-                                addGroup(line);
-                                break;
-                            case JOIN:
-                                // Join existing group
-                                joinGroup(line);
-                                break;
-                            case GROUPS:
-                                // Show all groups with users
-                                showGroups();
-                                break;
-                            case LEAVE:
-                                // Leave group
-                                leaveGroup(line);
-                                break;
-                            case GROUPBCST:
-                                // Send message to all users in group
-                                groupBroadcast(line);
-                                break;
-                            case KICK:
-                                // Kick user from group
-                                kickUser(line);
-                                break;
-                            case SENDFILE:
-                                // Send file to user
-                                sendFile(line);
-                                break;
-                            case COMMANDS:
-                                // Show all commands
-                                showCommands();
-                                break;
+                        if(username != null) {
+                            // Process message.
+                            switch (message.getMessageType()) {
+                                case HELO:
+                                    // Already logged in
+                                    writeToClient("-ERR Already logged in as " + username);
+                                    break;
+                                case BCST:
+                                    // Broadcast to other clients.
+                                    broadcast(message);
+                                    break;
+                                case QUIT:
+                                    // Close connection
+                                    state = FINISHED;
+                                    writeToClient("+OK Goodbye");
+                                    break;
+                                case UNKOWN:
+                                    // Unkown command has been sent
+                                    writeToClient("-ERR Unkown command");
+                                    break;
+                                case USERS:
+                                    // Show all online users
+                                    showUsers();
+                                    break;
+                                case DM :
+                                    // Send private message to user
+                                    sendPrivateMessage(line);
+                                    break;
+                                case ADD:
+                                    // Add new group
+                                    addGroup(line);
+                                    break;
+                                case JOIN:
+                                    // Join existing group
+                                    joinGroup(line);
+                                    break;
+                                case GROUPS:
+                                    // Show all groups with users
+                                    showGroups();
+                                    break;
+                                case LEAVE:
+                                    // Leave group
+                                    leaveGroup(line);
+                                    break;
+                                case GROUPBCST:
+                                    // Send message to all users in group
+                                    groupBroadcast(line);
+                                    break;
+                                case KICK:
+                                    // Kick user from group
+                                    kickUser(line);
+                                    break;
+                                case SENDFILE:
+                                    // Send file to user
+                                    sendFile(line);
+                                    break;
+                                case COMMANDS:
+                                    // Show all commands
+                                    showCommands();
+                                    break;
+                            }
+                        } else if(message.getMessageType() == Message.MessageType.HELO) {
+                            // Check username format.
+                            createUser(message);
                         }
                     }
                 }

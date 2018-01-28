@@ -137,7 +137,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
                 //Goed ingelogd, ga maar door.
                 state = SocketState.AUTHORIZED;
                 System.out.println("You are now logged in as " + username);
-            } else if (message.equals("-ERR user already logged in")) {
+            } else if (message.equals("-ERR already logged in as " + username)) {
                 //Niet goed ingelogd, andere naam proberen.
                 System.out.println("User already logged in, try another name.");
                 username = null;
