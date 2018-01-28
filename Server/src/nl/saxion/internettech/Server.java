@@ -103,24 +103,14 @@ public class Server {
         private Socket socket;
         private ServerState state;
         private String username;
-        private LinkedList<Message> delayedMessages;
-        private boolean receivingFile;
-        private Semaphore receivingFileSem;
 
         public ClientThread(Socket socket) {
             this.state = INIT;
             this.socket = socket;
-            delayedMessages = new LinkedList<>();
-            receivingFile = false;
-            receivingFileSem = new Semaphore(1, true);
         }
 
         public String getUsername() {
             return username;
-        }
-
-        public Semaphore getReceivingSemaphore() {
-            return receivingFileSem;
         }
 
         public OutputStream getOutputStream() {
@@ -390,15 +380,8 @@ public class Server {
                     if (sendToUser == null) {
                         writeToClient("-ERR user not found");
                     } else {
-                        try {
-                            writeToClient("+OK");
-                            sendToUser.getReceivingSemaphore().acquire();
-                            sendToUser.writeToClient("FILE " + getUsername() + " " + filename + " " + base64);
-                            sendToUser.getReceivingSemaphore().release();
-                            //sendToUser.sendDelayedMessages();
-                        } catch (InterruptedException e) {
-                            System.out.println("Server Exception: " + e.getMessage());
-                        }
+                        writeToClient("+OK");
+                        sendToUser.writeToClient("FILE " + getUsername() + " " + filename + " " + base64);
                     }
                 }
             }
