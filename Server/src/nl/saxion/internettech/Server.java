@@ -177,6 +177,10 @@ public class Server {
                                 // Kick user from group
                                 kickUser(line);
                                 break;
+                            case SENDFILE:
+                                // Send file to user
+                                sendFile(line);
+                                break;
                         }
                     }
                 }
@@ -332,6 +336,18 @@ public class Server {
                     String groupname = splits[1];
                     String username = splits[2];
                     writeToClient(groupManager.kickUser(groupname, username, getUsername()));
+                }
+            }
+        }
+
+        private void sendFile(String line) {
+            if(line != null && line.length() > 0) {
+                String[] splits = line.split("\\s+");
+                if(splits.length > 2) {
+                    String username = splits[1];
+                    String filename = splits[2];
+
+
                 }
             }
         }

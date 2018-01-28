@@ -13,7 +13,8 @@ public class Message {
         GROUPS,
         LEAVE,
         GROUPBCST,
-        KICK
+        KICK,
+        SENDFILE
     }
 
     private String line;
