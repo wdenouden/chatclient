@@ -1,6 +1,11 @@
 import model.Message;
 import model.SocketState;
 
+import javax.net.ServerSocketFactory;
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,10 +27,15 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
     private Socket socket;
 
     public void start() {
+        System.setProperty("javax.net.ssl.trustStore", "truststore.chatclient");
+        System.setProperty("javax.net.ssl.trustStorePassword", "Saxion123");
+
         while (true) {
             try {
                 state = SocketState.LOGIN_INPUT;
-                socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
+
+                SocketFactory factory = SSLSocketFactory.getDefault();
+                socket = factory.createSocket(SERVER_ADDRESS, SERVER_PORT);
 
                 InputHandler inputHandler = new InputHandler(socket);
                 inputHandler.setOnMessageReceived(this);
