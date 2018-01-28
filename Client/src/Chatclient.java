@@ -51,7 +51,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
                 while (state != SocketState.CLOSED) {
                     switch (state) {
                         case LOGIN_INPUT:
-                            if(username == null) {
+                            if (username == null) {
                                 //Nog niet ingelogd
                                 System.out.println("Please enter your username.");
                                 String name = readLine();
@@ -66,7 +66,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
                                         System.out.println("Username has an invalid format (only characters, numbers and underscores are allowed)");
                                     }
                                 }
-                            }else {
+                            } else {
                                 //Al eerder ingelogd maar gedisconnect
                                 sendMessage(new Message("HELO " + username));
                                 state = SocketState.LOGIN_CONFIRMING;
@@ -78,8 +78,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
                         case AUTHORIZED:
                             String line = readLine();
                             if (line != null) {
-                                writer.println(line);
-                                writer.flush();
+                                sendMessage(new Message(line));
                             }
                             break;
                     }
@@ -102,25 +101,32 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
     }
 
     private void sendMessage(Message m) {
-        if (!state.equals(SocketState.CLOSED)) {
+        if (!state.equals(SocketState.CLOSED) && m != null) {
             m.increaseAttempts();
             sentMessages.add(m);
+            String message = m.getMessage();
 
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (!state.equals(SocketState.CLOSED)) {
-                        if (sentMessages.peek() == m) {
-                            Message mResend = sentMessages.pop();
-                            mResend.increaseAttempts();
-                            sendMessage(mResend);
-                        }
+            if (message.startsWith("SENDFILE ")) {
+                String[] splits = message.split("\\s+");
+                if (splits.length > 2) {
+                    String username = splits[1];
+                    String filename = splits[2];
+
+                    FileTransfer transfer = new FileTransfer();
+                    if (transfer.checkIfFileExists(filename)) {
+                        String file = transfer.fileToBase64(filename);
+                        writer.println("SENDFILE " + username + " " + filename + " " + file);
+                        writer.flush();
+                    } else {
+                        System.out.println("Couldn't send file, file not found.");
                     }
+                } else {
+                    System.out.println("Couldn't send file, invalid parameters.");
                 }
-            }, 500);
-
-            writer.println(m.getMessage());
-            writer.flush();
+            }else {
+                writer.println(m.getMessage());
+                writer.flush();
+            }
         }
     }
 
@@ -142,15 +148,34 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
                 System.out.println("User already logged in, try another name.");
                 username = null;
                 state = SocketState.LOGIN_INPUT;
-            } else if (message.equals("HELO Welkom to WhatsUpp!")){
+            } else if (message.equals("HELO Welkom to WhatsUpp!")) {
                 //Negeer deze, te snel ingelogt.
-            }else {
+            } else {
                 //Corrupted name, verstuur bericht nogmaals.
                 System.out.println("Something went wrong on the server, logging in again.");
                 sendMessage(sentMessage); //sentMessage moet wel het inlogbericht zijn geweest.
             }
         } else {
-            System.out.println(message);
+
+            if(message.startsWith("FILE ")) {
+                String[] splits = message.split("\\s+");
+                if (splits.length > 3) {
+                    String username = splits[1];
+                    String filename = splits[2];
+                    String base64 = splits[3];
+
+                    FileTransfer transfer = new FileTransfer();
+                    if(transfer.saveFileFromBase64(filename, base64)) {
+                        System.out.println(username + " has sent you a file named " + filename);
+                    }else {
+                        System.out.println("Received file but was unable to save it.");
+                    }
+                } else {
+                    System.out.println("Couldn't send file, invalid parameters.");
+                }
+            }else {
+                System.out.println(message);
+            }
         }
     }
 
