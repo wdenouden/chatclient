@@ -8,10 +8,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Semaphore;
 
 import static nl.saxion.internettech.ServerState.*;
 
@@ -105,14 +103,24 @@ public class Server {
         private Socket socket;
         private ServerState state;
         private String username;
+        private LinkedList<Message> delayedMessages;
+        private boolean receivingFile;
+        private Semaphore receivingFileSem;
 
         public ClientThread(Socket socket) {
             this.state = INIT;
             this.socket = socket;
+            delayedMessages = new LinkedList<>();
+            receivingFile = false;
+            receivingFileSem = new Semaphore(1, true);
         }
 
         public String getUsername() {
             return username;
+        }
+
+        public Semaphore getReceivingSemaphore() {
+            return receivingFileSem;
         }
 
         public OutputStream getOutputStream() {
@@ -367,11 +375,31 @@ public class Server {
         private void sendFile(String line) {
             if(line != null && line.length() > 0) {
                 String[] splits = line.split("\\s+");
-                if(splits.length > 2) {
+                if(splits.length > 3) {
                     String username = splits[1];
                     String filename = splits[2];
+                    String base64 = splits[3];
 
-
+                    ClientThread sendToUser = null;
+                    for (ClientThread ct : threads) {
+                        if (ct != this && username.equals(ct.getUsername())) {
+                            sendToUser = ct;
+                            break;
+                        }
+                    }
+                    if (sendToUser == null) {
+                        writeToClient("-ERR user not found");
+                    } else {
+                        try {
+                            writeToClient("+OK");
+                            sendToUser.getReceivingSemaphore().acquire();
+                            sendToUser.writeToClient("FILE " + getUsername() + " " + filename + " " + base64);
+                            sendToUser.getReceivingSemaphore().release();
+                            //sendToUser.sendDelayedMessages();
+                        } catch (InterruptedException e) {
+                            System.out.println("Server Exception: " + e.getMessage());
+                        }
+                    }
                 }
             }
         }
