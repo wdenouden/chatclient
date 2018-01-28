@@ -139,7 +139,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
         }
 
         if (state == SocketState.LOGIN_CONFIRMING) {
-            if (message.equals("+OK " + username)) {
+            if (message.equals("+OK " + username) || message.equals("-ERR already logged in as " + username)) {
                 //Goed ingelogd, ga maar door.
                 state = SocketState.AUTHORIZED;
                 System.out.println("You are now logged in as " + username);
