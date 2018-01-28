@@ -31,7 +31,7 @@ public class FileTransfer {
             int fileNumber = 1;
             while (f.exists()) {
                 String[] fileSplit = filename.split("\\.(?=[^\\.]+$)");
-                f = new File(fileSplit[0] + "(" + fileNumber + ")" + fileSplit[1]);
+                f = new File(fileSplit[0] + "(" + fileNumber + ")." + fileSplit[1]);
                 fileNumber++;
             }
             byte[] data = Base64.getDecoder().decode(base64);

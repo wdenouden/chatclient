@@ -17,7 +17,7 @@ public class ServerConfiguration {
 
     // Simulation parameters for bad server modus.
     private boolean simulateDroppedPackets = false;
-    private boolean simulateCorruptedPackets = true;
+    private boolean simulateCorruptedPackets = false;
     private boolean simulateConnectionLost = false;
 
     public boolean doSimulateDroppedPackets() {
