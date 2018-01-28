@@ -204,6 +204,9 @@ public class Server {
                         } else if(message.getMessageType() == Message.MessageType.HELO) {
                             // Check username format.
                             createUser(message);
+                        } else {
+                            // You need to login to user other commands
+                            writeToClient("-ERR You need to log in first using HELO [username]");
                         }
                     }
                 }
