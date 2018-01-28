@@ -139,7 +139,7 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
         }
 
         if (state == SocketState.LOGIN_CONFIRMING) {
-            if (message.equals("+OK " + username) || message.equals("-ERR already logged in as " + username)) {
+            if (message.equals("+OK " + username) || message.equals("-ERR Already logged in as " + username)) {
                 //Goed ingelogd, ga maar door.
                 state = SocketState.AUTHORIZED;
                 System.out.println("You are now logged in as " + username);
@@ -157,24 +157,33 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
             }
         } else {
 
-            if(message.startsWith("FILE ")) {
-                String[] splits = message.split("\\s+");
-                if (splits.length > 3) {
-                    String username = splits[1];
-                    String filename = splits[2];
-                    String base64 = splits[3];
+            if(isCorruptMessage(message)) {
+                System.out.println("Message might be corrupt: " + message);
 
-                    FileTransfer transfer = new FileTransfer();
-                    if(transfer.saveFileFromBase64(filename, base64)) {
-                        System.out.println(username + " has sent you a file named " + filename);
-                    }else {
-                        System.out.println("Received file but was unable to save it.");
-                    }
-                } else {
-                    System.out.println("Couldn't send file, invalid parameters.");
+                if(sentMessage != null) {
+                    System.out.println("Attempting to resend last message");
+                    sendMessage(sentMessage);
                 }
             }else {
-                System.out.println(message);
+                if(message.startsWith("FILE ")) {
+                    String[] splits = message.split("\\s+");
+                    if (splits.length > 3) {
+                        String username = splits[1];
+                        String filename = splits[2];
+                        String base64 = splits[3];
+
+                        FileTransfer transfer = new FileTransfer();
+                        if(transfer.saveFileFromBase64(filename, base64)) {
+                            System.out.println(username + " has sent you a file named " + filename);
+                        }else {
+                            System.out.println("Received file but was unable to save it.");
+                        }
+                    } else {
+                        System.out.println("Couldn't send file, invalid parameters.");
+                    }
+                }else {
+                    System.out.println(message);
+                }
             }
         }
     }
@@ -183,6 +192,20 @@ public class Chatclient implements InputHandler.IMessageReceivedHandler {
     public void onConnectionLost() {
         sentMessages.clear();
         state = SocketState.CLOSED;
+    }
+
+    public boolean isCorruptMessage(String message) {
+        if(message == null) {
+            return true;
+        }
+
+        return !(message.startsWith("+OK")
+                || message.startsWith("-ERR")
+                || message.startsWith("HELO")
+                || message.startsWith("GROUP")
+                || message.startsWith("DM")
+                || message.startsWith("BCST")
+                || message.startsWith("FILE"));
     }
 
     public String readLine() {

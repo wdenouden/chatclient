@@ -273,7 +273,7 @@ public class Server {
                 if(splits.length > 2) {
                     for(ClientThread ct: threads) {
                         if(ct.getUsername().equals(splits[1])) {
-                            String msg = getUsername() + " says: ";
+                            String msg = "DM " + getUsername() + " says: ";
                             for(int i = 2; i < splits.length; i++) {
                                 msg += splits[i] + " ";
                             }
@@ -396,9 +396,9 @@ public class Server {
          * Show all available commands
          */
         private void showCommands() {
-            String msg = "";
+            String msg = "+OK COMMANDS ARE:";
             for(Message.MessageType type: Message.MessageType.values()) {
-                msg += type + "\n";
+                msg +=  " " + type;
             }
             writeToClient(msg);
         }

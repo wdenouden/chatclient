@@ -66,7 +66,7 @@ public class GroupManager {
                             if(deleteGroup(g)) {
                                 return "+OK group deleted";
                             } else {
-                                return "-ERR ";
+                                return "-ERR";
                             }
                         case "OK":
                             return "+OK group left";
@@ -104,7 +104,7 @@ public class GroupManager {
      */
     public String sendGroupMessage(String[] splits, String username) {
         String groupname = splits[1];
-        String msg = "(" + groupname + ") " + username + " says: ";
+        String msg = "GROUP (" + groupname + ") " + username + " says: ";
         for(int i = 2; i < splits.length; i++) {
             msg += splits[i] + " ";
         }
