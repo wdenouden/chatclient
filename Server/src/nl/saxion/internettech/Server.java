@@ -197,6 +197,10 @@ public class Server {
                                 // Send file to user
                                 sendFile(line);
                                 break;
+                            case COMMANDS:
+                                // Show all commands
+                                showCommands();
+                                break;
                         }
                     }
                 }
@@ -356,6 +360,10 @@ public class Server {
             }
         }
 
+        /**
+         * Send file to other user
+         * @param line
+         */
         private void sendFile(String line) {
             if(line != null && line.length() > 0) {
                 String[] splits = line.split("\\s+");
@@ -366,6 +374,17 @@ public class Server {
 
                 }
             }
+        }
+
+        /**
+         * Show all available commands
+         */
+        private void showCommands() {
+            String msg = "";
+            for(Message.MessageType type: Message.MessageType.values()) {
+                msg += type + "\n";
+            }
+            writeToClient(msg);
         }
 
         /**

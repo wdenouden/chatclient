@@ -14,7 +14,8 @@ public class Message {
         LEAVE,
         GROUPBCST,
         KICK,
-        SENDFILE
+        SENDFILE,
+        COMMANDS
     }
 
     private String line;
