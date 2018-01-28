@@ -259,11 +259,13 @@ public class Server {
          * Show all users
          */
         private void showUsers() {
+            String msg = "";
             for(ClientThread ct: threads) {
                 if(ct.getUsername() != null) {
-                    writeToClient(ct.getUsername());
+                    msg += ct.getUsername() + "\n";
                 }
             }
+            writeToClient(msg);
         }
 
         /**
